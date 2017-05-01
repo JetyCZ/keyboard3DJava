@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <property name="DEFAULT_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n"/>
+    <property name="FILE_LOG_PATTERN" value="%d{HH:mm:ss.SSS};%msg%n"/>
+
+    <appender name="OUT" class="ch.qos.logback.core.ConsoleAppender">
+        <!-- encoders are assigned the type
+        ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+        <encoder>
+            <pattern>${DEFAULT_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+
+    <logger name="net.jetensky.keyboard3djava.util.FileSystemUtil" level="TRACE"/>
+    <logger name="net.jetensky" level="DEBUG"/>
+
+    <root level="INFO">
+        <appender-ref ref="OUT" />
+    </root>
+
+</configuration>
