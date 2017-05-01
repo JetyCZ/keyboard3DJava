@@ -52,14 +52,14 @@ public class DrawUtil {
         Point bottomLeft = new Point(rect.x, bottom);
         Point bottomRight = new Point(right, bottom);
 
-        drawLine(img, topLeft, topRight, color);
-        drawLine(img, topRight, bottomRight, color);
-        drawLine(img, bottomRight, bottomLeft, color);
-        drawLine(img, bottomLeft, topLeft, color);
+        drawLine(img, topLeft, topRight, color, 1);
+        drawLine(img, topRight, bottomRight, color, 1);
+        drawLine(img, bottomRight, bottomLeft, color, 1);
+        drawLine(img, bottomLeft, topLeft, color, 1);
     }
 
-    public static void drawLine(Mat bill, Point from, Point to, Scalar color) {
-        Imgproc.line(bill, from, to, color,1);
+    public static void drawLine(Mat bill, Point from, Point to, Scalar color, int thickness) {
+        Imgproc.line(bill, from, to, color, thickness);
     }
 
     public static Mat copyRegion(Mat source, Rect region) {

@@ -55,11 +55,8 @@ public class FileSystemUtil {
         return writeTraceImage("/tmp/", "a",img);
     }
     public static String writeTraceImage(String folder, String filename, Mat img) {
-        if (log.isTraceEnabled()) {
-            String addedSlash = folder.endsWith("/")?"":"/";
-            return writeTemporaryImage(folder + addedSlash + "debug/", filename, img);
-        }
-        return null;
+        String addedSlash = folder.endsWith("/")?"":"/";
+        return writeTemporaryImage(folder + addedSlash + "debug/", filename, img);
     }
 
     public static String writeTemporaryImage(String folder, String filename, Mat img) {

@@ -1,7 +1,6 @@
 package net.jetensky.keyboard3djava.app;
 
 import boofcv.struct.image.GrayU16;
-import net.jetensky.keyboard3djava.util.AwtPointUtil;
 import net.jetensky.keyboard3djava.util.DrawUtil;
 import net.jetensky.keyboard3djava.util.ImageUtil;
 import net.jetensky.keyboard3djava.util.opencv.OpencvLoaderHelper;
@@ -11,14 +10,11 @@ import net.jetensky.keyboard3djava.util.swing.UI;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
-import org.opencv.imgproc.Imgproc;
 import org.openkinect.freenect.*;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import static net.jetensky.keyboard3djava.util.swing.SwingUtils.bufferDepthToMat;
 
@@ -30,6 +26,7 @@ import static net.jetensky.keyboard3djava.util.swing.SwingUtils.bufferDepthToMat
 public class Keyboard3D {
 
     EightPen2D eightPen2D = new EightPen2D();
+
 	ImageCanvas imageCanvas;
 	GrayU16 depthGrayU16 = new GrayU16(1,1);
 	BufferedImage outDepthImage;
@@ -42,7 +39,12 @@ public class Keyboard3D {
         app.process();
     }
 
-	public void process() {
+
+    public Keyboard3D() {
+        this.keyboardStateEngine.setEightPen2D(eightPen2D);
+    }
+
+    public void process() {
 		Context kinect = Freenect.createContext();
  
 		if( kinect.numDevices() < 0 )
@@ -71,7 +73,6 @@ public class Keyboard3D {
  
 	}
 
-	List<Point> lastHandPositions = new ArrayList<>();
 
  
 	protected void processDepth(FrameMode mode, ByteBuffer depthFrame) {
@@ -91,7 +92,8 @@ public class Keyboard3D {
 		keyboardStateEngine.processDepth(depthMat);
 
 		drawInfoGraphics(depthMat, eightPen2D);
-		ui.debug(eightPen2D.getActiveSegment(keyboardStateEngine.getHandPointer()));
+        boolean isInGap = keyboardStateEngine.isInGap();
+        ui.debug(eightPen2D.getActiveSegment(keyboardStateEngine.getHandPointer(), isInGap));
 
 		// FileSystemUtil.saveImage(depthMat, "/tmp/debug/a.png");
 		SwingUtils.matToBufferedImage2(depthMat, outDepthImage);
@@ -104,37 +106,21 @@ public class Keyboard3D {
 
 	private void drawInfoGraphics(Mat depthMat, EightPen2D eightPen2D) {
 		ImageUtil.Blob handBlob = keyboardStateEngine.getHandBlob();
-		int smoothedAvgCount = 4;
 		if (handBlob!=null) {
 			DrawUtil.drawContour(depthMat, handBlob.contour, Color.CYAN);
-			Point handPointer = keyboardStateEngine.getHandPointer();
-			if (handPointer!=null) {
-				if (lastHandPositions.size()>= smoothedAvgCount) {
-					lastHandPositions.remove(0);
-				}
-				lastHandPositions.add(new Point((int) handPointer.x, (int) handPointer.y));
-			}
 
-			Point hand = AwtPointUtil.avg(lastHandPositions, smoothedAvgCount);
-			int handX = (int) hand.x;
-			int handY = (int) hand.y;
-			DrawUtil.drawLine(depthMat, new Point(handX-10, handY-10), new Point(handX+10, handY+10), new Scalar(128,64,255));
-			DrawUtil.drawLine(depthMat, new Point(handX+10, handY-10), new Point(handX-10, handY+10), new Scalar(128,64,255));
+            Point hand = keyboardStateEngine.getHandPointerSmoothed();
+            int handX = (int) hand.x;
+            int handY = (int) hand.y;
+
+
+			DrawUtil.drawLine(depthMat, new Point(handX-10, handY-10), new Point(handX+10, handY+10), new Scalar(128,64,255), 1);
+			DrawUtil.drawLine(depthMat, new Point(handX+10, handY-10), new Point(handX-10, handY+10), new Scalar(128,64,255), 1);
 			handBlob.contour.release();
 		}
-		Point kMiddle = eightPen2D.getMiddle();
-		Imgproc.circle(depthMat, kMiddle, eightPen2D.getInnerRadius(), new Scalar(64,255,128));
-		Imgproc.circle(depthMat, kMiddle, eightPen2D.getOuterRadius(), new Scalar(64,255,128));
+		EightPen2DDrawer.drawCircles(eightPen2D, depthMat, new Scalar(64, 255, 128), 1);
+		EightPen2DDrawer.drawCrosses(eightPen2D, depthMat, new Scalar(64, 255, 128), 1);
 
-		Point p1 = new Point(
-				(int) kMiddle.x - eightPen2D.getInnerRadius()*1.41,
-				(int) kMiddle.y - eightPen2D.getInnerRadius()*1.41
-				);
-		for (int i=0;i<4;i++) {
-			int crossLength = (int) Math.sqrt(eightPen2D.getOuterRadius()*eightPen2D.getOuterRadius()*0.5 - eightPen2D.getInnerRadius());
-			DrawUtil.drawLine(depthMat, new Point(kMiddle.x- crossLength, kMiddle.y- crossLength), new Point(kMiddle.x+ crossLength, kMiddle.y+ crossLength), new Scalar(128,64,255));
-			DrawUtil.drawLine(depthMat, new Point(kMiddle.x- crossLength, kMiddle.y+ crossLength), new Point(kMiddle.x+ crossLength, kMiddle.y- crossLength), new Scalar(128,64,255));
-		}
 	}
 
 	private void bufferDepthToU16Mirror(ByteBuffer depthFrameInput, GrayU16 matOutput) {

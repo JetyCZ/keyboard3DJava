@@ -1,5 +1,6 @@
 package net.jetensky.keyboard3djava.app;
 
+import net.jetensky.keyboard3djava.util.AwtPointUtil;
 import net.jetensky.keyboard3djava.util.ImageUtil;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
@@ -11,8 +12,13 @@ import java.util.List;
 public class KeyboardStateEngine {
     boolean resetEnvDistances = true;
     private Mat envDistances;
+    private Mat keyboardGaps;
     private Point handPointer;
     private ImageUtil.Blob handBlob;
+    private EightPen2D eightPen2D;
+    private Point handPointerSmoothed;
+    List<Point> lastHandPositions = new ArrayList<>();
+
 
     public ActionListener resetEnvDistances() {
         return e -> {
@@ -20,10 +26,17 @@ public class KeyboardStateEngine {
         };
     }
 
+    int smoothedAvgCount = 4;
+
+
     public void processDepth(Mat depthMat) {
         if (resetEnvDistances) {
             resetEnvDistances = false;
             envDistances = depthMat.clone();
+            keyboardGaps = new Mat(depthMat.size(), CvType.CV_8U);
+            int gapThickness = 10;
+            EightPen2DDrawer.drawCircles(eightPen2D, keyboardGaps, new Scalar(255), gapThickness);
+            EightPen2DDrawer.drawCrosses(eightPen2D, keyboardGaps, new Scalar(255), gapThickness);
         }
         if (envDistances!=null) {
             Mat tableDistances = calcTableDistances(depthMat);
@@ -33,6 +46,16 @@ public class KeyboardStateEngine {
             if (!blobs.isEmpty()) {
                 handBlob = blobs.get(0);
                 handPointer = calculateHandPointer(handBlob);
+
+                if (handPointer!=null) {
+                    if (lastHandPositions.size()>= smoothedAvgCount) {
+                        lastHandPositions.remove(0);
+                    }
+                    lastHandPositions.add(new Point((int) handPointer.x, (int) handPointer.y));
+                }
+
+                handPointerSmoothed = AwtPointUtil.avg(lastHandPositions, smoothedAvgCount);
+
                 boolean first = true;
                 for (ImageUtil.Blob blob : blobs) {
                     if (first) {
@@ -50,6 +73,15 @@ public class KeyboardStateEngine {
             handBinary.release();
             handBinarySingle.release();
         }
+    }
+
+    public boolean isInGap() {
+        if (keyboardGaps==null) return false;
+        if (handPointerSmoothed!=null) {
+            double[] pixel = keyboardGaps.get((int) handPointerSmoothed.y, (int) handPointerSmoothed.x);
+            return pixel[0] > 254;
+        }
+        return false;
     }
 
     private Point calculateHandPointer(ImageUtil.Blob handBlob) {
@@ -92,5 +124,17 @@ public class KeyboardStateEngine {
 
     public ImageUtil.Blob getHandBlob() {
         return handBlob;
+    }
+
+    public void setEightPen2D(EightPen2D eightPen2D) {
+        this.eightPen2D = eightPen2D;
+    }
+
+    public EightPen2D getEightPen2D() {
+        return eightPen2D;
+    }
+
+    public Point getHandPointerSmoothed() {
+        return handPointerSmoothed;
     }
 }

@@ -85,4 +85,17 @@ public class MathUtil {
         double thresholdRange = (double) percentThreshold/100;
         return !inBetween((double) value1/value2, 1 - thresholdRange, 1 + thresholdRange);
     }
+
+    public static Point rotatePointAroundAnother(Point toRotate, Point rotationMiddle, int angleDegrees) {
+        double angle = (double) 2*Math.PI* ((double) angleDegrees/360);
+        Point rotated = new Point();
+        double x1 = toRotate.x;
+        double y1 = toRotate.y;
+        double x0 = rotationMiddle.x;
+        double y0 = rotationMiddle.y;
+        rotated.x = ((x1 - x0) * Math.cos(angle)) - ((y1 - y0) * Math.sin(angle)) + x0;
+        rotated.y = ((x1 - x0) * Math.sin(angle)) + ((y1 - y0) * Math.cos(angle)) + y0;
+        return rotated;
+
+    }
 }
