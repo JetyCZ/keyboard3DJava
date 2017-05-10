@@ -4,6 +4,8 @@ import net.jetensky.keyboard3djava.util.MathUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.opencv.core.Point;
 
+import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,7 +21,12 @@ public class EightPen2D {
 
     Map<String, String> sequenceToKeyMapping = new HashMap<>();
 
+
+    private SoundPlayer soundPlayer;
+    private String letterInProgress;
+
     {
+        soundPlayer = new SoundPlayer();
         sequenceToKeyMapping.put( "32", "a");
         sequenceToKeyMapping.put(  "4321", "b");
         sequenceToKeyMapping.put( "1234", "c");
@@ -53,8 +60,19 @@ public class EightPen2D {
         sequenceToKeyMapping.put( "34123", "!" );
         sequenceToKeyMapping.put( "14", "," );
 
-        sequenceToKeyMapping.put( "3", " " );
+        sequenceToKeyMapping.put( "3", "SPACE" );
+        sequenceToKeyMapping.put( "4", "ENTER" );
 
+    }
+
+
+    Robot robot;
+    public EightPen2D() {
+        try {
+            robot = new Robot();
+        } catch (AWTException e) {
+            throw new IllegalStateException("Cannot initialize keyboard robot", e);
+        }
     }
 
     public void setBottomDistance(int bottomDistance) {
@@ -85,6 +103,7 @@ public class EightPen2D {
         this.innerRadius = innerRadius;
     }
 
+
     public String getActiveSegment(Point handPointer, boolean isInGap) {
 
         if (handPointer==null) return "NO HAND";
@@ -110,36 +129,78 @@ public class EightPen2D {
         }
 
 
+
+        // Simulate a key press
+        int keyToPress = -1;
+
         String sequenceStr = sequence.toString();
         if (lastSegment!=segment) {
             if (!isInGap) {
                 if (segment==0) {
                     if (collectionInProgress) {
-
                         if ("1".equals(sequenceStr)) {
-                            if (!StringUtils.isEmpty(text))
+                            if (!StringUtils.isEmpty(text)) {
                                 text = text.substring(0, text.length()-1);
+                            }
+                            keyToPress = KeyEvent.VK_BACK_SPACE;
+
                         } else {
                             String key = sequenceToKeyMapping.get(sequenceStr);
                             if (key!=null) {
                                 text+=key;
+                                char keyToPressChar = key.charAt(0);
+                                if (keyToPressChar == '!') {
+                                    keyToPress = 16;
+                                } else if (keyToPressChar == '@') {
+                                    keyToPress = KeyEvent.VK_AT;
+                                } else if (key.equals("'")) {
+                                    keyToPress = KeyEvent.VK_DEAD_ACUTE;
+                                } else if (key.equals("SPACE")) {
+                                    keyToPress = KeyEvent.VK_SPACE;
+                                } else if (key.equals("ENTER")) {
+                                    keyToPress = KeyEvent.VK_ENTER;
+                                } else if (key.equals(",")) {
+                                    keyToPress = 44;
+                                } else if (key.equals(".")) {
+                                    keyToPress = 46;
+                                } else if (key.equals("?")) {
+                                    keyToPress = 50;
+                                } else {
+                                    keyToPress = KeyEvent.getExtendedKeyCodeForChar(keyToPressChar);
+                                }
+
                             }
                         }
                         sequence.setLength(0);
                     }
                     collectionInProgress = true;
+                    setLetterInProgress("");
                 } else {
                     if (collectionInProgress && segment>0) {
                         sequence.append(segment);
+                        setLetterInProgress(sequenceToKeyMapping.get(sequence.toString()));
                     }
                 }
                 lastSegment = segment;
+                soundPlayer.playSoundAsynchronously("/beeps/beep-" + segment + ".wav");
+
             }
+
         }
 
-
+        if (keyToPress!=-1) {
+            robot.keyPress(keyToPress);
+            robot.keyRelease(keyToPress);
+        }
         return text + ":" + segment + "(" + sequenceStr + ") " + ((isInGap)?"GAP":"");
     }
 
 
+    public String getLetterInProgress() {
+        return letterInProgress;
+    }
+
+    public void setLetterInProgress(String letterInProgress) {
+        this.letterInProgress = letterInProgress;
+    }
 }

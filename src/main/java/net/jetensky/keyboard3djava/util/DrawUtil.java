@@ -13,6 +13,11 @@ import java.util.List;
 public class DrawUtil {
     private final static Logger log = LoggerFactory.getLogger(DrawUtil.class);
 
+
+    public static void drawText(Mat debugImg, String text, Point point, double fontWidth, Color color) {
+        Imgproc.putText(debugImg, text, point, Core.FONT_HERSHEY_TRIPLEX, fontWidth, DrawUtil.toScalar(color));
+
+    }
     public static void drawContour(Mat img, MatOfPoint contour, Color color) {
         Imgproc.drawContours(img, Collections.singletonList(contour), 0, new Scalar(color.getBlue(), color.getGreen(), color.getRed()),2);
     }

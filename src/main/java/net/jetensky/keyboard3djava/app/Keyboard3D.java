@@ -7,6 +7,7 @@ import net.jetensky.keyboard3djava.util.opencv.OpencvLoaderHelper;
 import net.jetensky.keyboard3djava.util.swing.ImageCanvas;
 import net.jetensky.keyboard3djava.util.swing.SwingUtils;
 import net.jetensky.keyboard3djava.util.swing.UI;
+import org.apache.commons.lang3.StringUtils;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Scalar;
@@ -94,6 +95,13 @@ public class Keyboard3D {
 		drawInfoGraphics(depthMat, eightPen2D);
         boolean isInGap = keyboardStateEngine.isInGap();
         ui.debug(eightPen2D.getActiveSegment(keyboardStateEngine.getHandPointer(), isInGap));
+
+		Point middle = eightPen2D.getMiddle();
+		String letterInProgress = eightPen2D.getLetterInProgress();
+		if (!StringUtils.isEmpty(letterInProgress)) {
+			DrawUtil.drawText(depthMat, letterInProgress, new Point(middle.x, middle.y - 2*eightPen2D.getOuterRadius()),2,Color.GREEN);
+		}
+
 
 		// FileSystemUtil.saveImage(depthMat, "/tmp/debug/a.png");
 		SwingUtils.matToBufferedImage2(depthMat, outDepthImage);

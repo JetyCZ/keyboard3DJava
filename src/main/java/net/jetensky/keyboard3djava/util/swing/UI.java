@@ -22,8 +22,8 @@ public class UI {
         KeyEventDispatcher dispatcher = new KeyEventDispatcher() {
             // Anonymous class invoked from EDT
             public boolean dispatchKeyEvent(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_SPACE)
-                    latch.countDown();
+                /*if (e.getKeyCode() == KeyEvent.VK_SPACE)
+                    latch.countDown();*/
                 return false;
             }
         };
